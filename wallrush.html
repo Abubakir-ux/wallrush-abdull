@@ -369,6 +369,7 @@
   .confetti{ position:absolute; top:0; width:8px; height:14px; border-radius:2px; z-index:1; }
 </style>
 </head>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <body>
 <div id="app">
 
@@ -824,6 +825,50 @@
   const overlaySub = document.getElementById('overlaySub');
   const overlayBtn = document.getElementById('overlayBtn');
   const overlayMenuBtn = document.getElementById('overlayMenuBtn');
+
+  // Serverga ulanish (lokal test uchun)
+const socket = io("http://localhost:3000");
+
+let myColor = null; // 'blue' yoki 'red'
+let currentRoom = null;
+
+// Onlayn tugmasi bosilganda
+document.getElementById('playOnlineBtn').addEventListener('click', () => {
+  showScreen(matchScreen);
+  socket.emit('join_game');
+});
+
+// Serverdan o'yin boshlanish xabari kelganda
+socket.on('game_start', (data) => {
+  myColor = data.color;
+  currentRoom = data.roomId;
+  
+  showScreen(gameScreen);
+  initGame('online'); 
+  // Agar myColor 'blue' bo'lmasa, faqat o'z navbatida yura oladigan logic qo'shiladi
+});
+
+// Raqib yurish qilganda
+socket.on('opponent_move', (data) => {
+  if (data.type === 'move') {
+    // Raqib shari joyini yangilash
+    movePiece(data.x, data.y);
+  } else if (data.type === 'wall') {
+    // Raqib qo'ygan devorni taxtaga chizish
+    placeWall(data.wallData);
+  }
+});
+
+// O'zimiz yurganda serverga yuborish funksiyasi
+function sendMoveToServer(type, payload) {
+  if (activeMode === 'online') {
+    socket.emit('make_move', {
+      roomId: currentRoom,
+      type: type,
+      payload: payload
+    });
+  }
+}
 
   let state;
   let activeMode = '2p';
